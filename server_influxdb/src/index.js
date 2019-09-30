@@ -26,7 +26,9 @@ function getLine(measurement, tags, values, timestamp_ns) {
 		body += `${field}=${values[field]}`;
 	}
 
-	body += ` ${timestamp_ns}`;
+	if (timestamp_ns != null) {
+		body += ` ${timestamp_ns}`;
+	}
 	return body;
 }
 
@@ -103,6 +105,16 @@ mqttClient.on('message', function (topic, message) {
 		case 'data':
 			handleData(clientId, message);
 			console.info(message.toString());
+			break;
+		case 'temperature_c':
+			let temperature = parseFloat(message.toString());
+			console.info('Got', temperature, '°C from', clientId);
+			sendValues(getLine('temperature', { clientid: clientId }, { value: temperature }));
+			break;
+		case 'uptime_ms':
+			let uptime = parseFloat(message.toString());
+			console.info('Got', uptime, 'ms uptime from', clientId);
+			sendValues(getLine('uptime', { clientid: clientId }, { value: uptime }));
 			break;
 		case 'dead':
 			console.info('client', clientId, 'died with message', message.toString());
