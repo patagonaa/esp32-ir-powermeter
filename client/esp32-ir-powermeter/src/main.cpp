@@ -43,7 +43,7 @@ void setup()
       NULL);           /* Task handle. */
   xTaskCreate(
       loopMetaData,
-      "MqttKeepAlive",
+      "SendMetaData",
       10000,           /* Stack size */
       NULL,            /* Parameter */
       1,               /* Priority */
