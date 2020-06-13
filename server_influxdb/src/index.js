@@ -116,8 +116,16 @@ mqttClient.on('message', function (topic, message) {
 			console.info('Got', uptime, 'ms uptime from', clientId);
 			sendValues(getLine('uptime', { clientid: clientId }, { value: uptime }));
 			break;
+		case 'measurement_time_ms':
+			let measurementTime = parseFloat(message.toString());
+			console.info('Got', measurementTime, 'ms measurement time from', clientId);
+			sendValues(getLine('measurement_time', { clientid: clientId }, { value: measurementTime }));
+			break;
 		case 'dead':
 			console.info('client', clientId, 'died with message', message.toString());
+			break;
+		case 'alive':
+			console.info('client', clientId, 'went alive with message', message.toString());
 			break;
 		default:
 			console.warn('unknown messageType', messageType);

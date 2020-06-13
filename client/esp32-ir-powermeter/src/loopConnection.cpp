@@ -16,6 +16,7 @@ void ensureConnected()
     Serial.println("Connecting to Mqtt...");
     if (mqttClient.connect("ir-powermeter-" METER_NAME, MQTT_USER, MQTT_PASSWORD, "ir-powermeter/" METER_NAME "/dead", MQTTQOS0, false, "pwease weconnect me UwU"))
     {
+      mqttClient.publish("ir-powermeter/" METER_NAME "/alive", "I'm alive!", false);
       Serial.println("connected");
     }
     else
