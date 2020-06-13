@@ -7,7 +7,9 @@ void ensureConnected()
 {
   if (WiFi.status() != WL_CONNECTED)
   {
-    Serial.println("Not Connected to WiFi");
+    Serial.println("Not Connected to WiFi! Rebooting!");
+    delay(1000);
+    ESP.restart();
   }
   else if (!mqttClient.connected())
   {

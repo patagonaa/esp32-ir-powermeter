@@ -20,10 +20,11 @@ bool publishMetaData()
   return false;
 }
 
-bool loopMetaData(void *param){
-    while (true)
-    {
-        publishMetaData();
-        delay(60000);
-    }
+bool loopMetaData(void *param)
+{
+  while (true)
+  {
+    publishMetaData();
+    delay(60000);
+  }
 }
