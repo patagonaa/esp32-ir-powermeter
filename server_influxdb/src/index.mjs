@@ -1,11 +1,13 @@
-const mqtt = require('mqtt');
-const request = require('request');
+import * as mqtt from "mqtt";
+import fetch from 'node-fetch';
 
 const MQTT_SERVER = process.env.MQTT_SERVER || "mqtt://localhost";
 const MQTT_USER = process.env.MQTT_USER;
 const MQTT_PASSWORD = process.env.MQTT_PASSWORD;
 
 const INFLUX_SERVER = process.env.INFLUX_SERVER || "http://localhost:8086";
+const INFLUX_USER = process.env.INFLUX_USER || "";
+const INFLUX_PASSWORD = process.env.INFLUX_PASSWORD || "";
 const INFLUX_DATABASE = process.env.INFLUX_DATABASE || 'ir-powermeter';
 
 function getLine(measurement, tags, values, timestamp_ns) {
@@ -32,19 +34,23 @@ function getLine(measurement, tags, values, timestamp_ns) {
 	return body;
 }
 
-function sendValues(lines) {
+async function sendValues(lines) {
 	let requestOptions = {
-		body: lines
-	};
-	request.post(`${INFLUX_SERVER}/write?db=${INFLUX_DATABASE}`, requestOptions, (error, response, body) => {
-		if (error) {
-			console.error("error while transmitting value: ", error);
-		} else if (response.statusCode >= 200 && response.statusCode < 300) {
-			console.info('successfully transmitted value: HTTP', response.statusCode);
-		} else {
-			console.error('error while transmitting value: HTTP', response.statusCode);
+		method: 'POST',
+		body: lines,
+		headers: {
+			'Authorization': 'Basic ' + Buffer.from(INFLUX_USER + ':' + INFLUX_PASSWORD).toString('base64')
 		}
-	});
+	};
+	try {
+		let response = await fetch(`${INFLUX_SERVER}/write?db=${INFLUX_DATABASE}`, requestOptions);
+		if (!response.ok) {
+			throw `status ${response.status}`;
+		}
+		console.info('successfully transmitted value: HTTP', response.status);
+	} catch (error) {
+		console.error("error while transmitting value: ", error);
+	}
 }
 
 const mqttClient = mqtt.connect(MQTT_SERVER, { username: MQTT_USER, password: MQTT_PASSWORD });
@@ -53,7 +59,7 @@ mqttClient.on('connect', function () {
 	mqttClient.subscribe('ir-powermeter/+/+');
 });
 
-function handleData(clientId, data) {
+async function handleData(clientId, data) {
 	let timestamp_ns = Date.now() * 1000 * 1000;
 
 	let registers = {};
@@ -94,10 +100,10 @@ function handleData(clientId, data) {
 		}
 	}
 
-	sendValues(influxLines.join('\n'))
+	await sendValues(influxLines.join('\n'))
 }
 
-mqttClient.on('message', function (topic, message) {
+mqttClient.on('message', async function (topic, message) {
 	let topicSplit = topic.split('/');
 	let clientId = topicSplit[1];
 	let messageType = topicSplit[2];
@@ -109,17 +115,17 @@ mqttClient.on('message', function (topic, message) {
 		case 'temperature_c':
 			let temperature = parseFloat(message.toString());
 			console.info('Got', temperature, '°C from', clientId);
-			sendValues(getLine('temperature', { clientid: clientId }, { value: temperature }));
+			await sendValues(getLine('temperature', { clientid: clientId }, { value: temperature }));
 			break;
 		case 'uptime_ms':
 			let uptime = parseFloat(message.toString());
 			console.info('Got', uptime, 'ms uptime from', clientId);
-			sendValues(getLine('uptime', { clientid: clientId }, { value: uptime }));
+			await sendValues(getLine('uptime', { clientid: clientId }, { value: uptime }));
 			break;
 		case 'measurement_time_ms':
 			let measurementTime = parseFloat(message.toString());
 			console.info('Got', measurementTime, 'ms measurement time from', clientId);
-			sendValues(getLine('measurement_time', { clientid: clientId }, { value: measurementTime }));
+			await sendValues(getLine('measurement_time', { clientid: clientId }, { value: measurementTime }));
 			break;
 		case 'dead':
 			console.info('client', clientId, 'died with message', message.toString());
