@@ -23,6 +23,6 @@
   "homepage": "https://github.com/patagonaa/esp32-ir-powermeter#readme",
   "dependencies": {
     "mqtt": "^4.3.6",
-    "node-fetch": "^3.2.0"
+    "node-fetch": "^3.2.10"
   }
 }
